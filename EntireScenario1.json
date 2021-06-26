@@ -1,0 +1,579 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Templated for Scenario1",
+    "Resources": {
+        "scenario1vpc": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.0.0.0/16",
+                "EnableDnsHostnames": "true",
+                "EnableDnsSupport": "true",
+                "InstanceTenancy": "default"
+            }
+        },
+        "scenario1subneta": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-east-1a",
+                "CidrBlock": "10.0.0.0/24",
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+        "scenario1subnetb": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": "us-east-1b",
+                "CidrBlock": "10.0.1.0/24",
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+        "scenario1igw": {
+            "Type": "AWS::EC2::InternetGateway"
+        },
+        "scenario1igwattach": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "InternetGatewayId": {
+                    "Ref": "scenario1igw"
+                },
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+        "scenario1RouteTablea": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+        "scenario1RouteTableb": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+        "scenario1DefaultRoutea": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "scenario1RouteTablea"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "scenario1igw"
+                }
+            }
+        },
+        "scenario1DefaultRouteb": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "scenario1RouteTableb"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "scenario1igw"
+                }
+            }
+        },
+        "scenario1routetableassociationa": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "scenario1subneta"
+                },
+                "RouteTableId": {
+                    "Ref": "scenario1RouteTablea"
+                }
+            }
+        },
+        "scenario1routetableassociationb": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "scenario1subnetb"
+                },
+                "RouteTableId": {
+                    "Ref": "scenario1RouteTableb"
+                }
+            }
+        },
+        "scenario1sg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Allow SSH and Web Traffic",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80"
+                    },
+                    {
+                        "CidrIp": "205.206.67.0/24",
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "IpProtocol": "all"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+        "scenario1nlbsg": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Allow LoadBalancer Traffic",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "IpProtocol": "tcp",
+                        "FromPort": "80",
+                        "ToPort": "80"
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                }
+            }
+        },
+
+        "webservera": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "KeyName": "newkey2021",
+                "InstanceType": "t2.micro",
+                "ImageId": "ami-042e8287309f5df03",
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": true,
+                        "DeviceIndex": "0",
+                        "SubnetId": {
+                            "Ref": "scenario1subneta"
+                        },
+                        "GroupSet": [
+                            {
+                                "Ref": "scenario1sg"
+                            }
+                        ]
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "apt install -y aws-cfn-bootstrap",
+                                "apt-get update -y",
+                                "apt-get install yum-utils -y",
+                                "apt update",
+                                "apt install apache2 -y"
+                            ]
+                        ]
+                    }
+                },
+                "Tags": [
+                    {
+                        "Key": "environment",
+                        "Value": "scenario1"
+                    }
+                ]
+            }
+        },
+        "webserverb": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "KeyName": "newkey2021",
+                "InstanceType": "t2.micro",
+                "ImageId": "ami-042e8287309f5df03",
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": true,
+                        "DeviceIndex": "0",
+                        "SubnetId": {
+                            "Ref": "scenario1subnetb"
+                        },
+                        "GroupSet": [
+                            {
+                                "Ref": "scenario1sg"
+                            }
+                        ]
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "apt install -y aws-cfn-bootstrap",
+                                "apt-get update -y",
+                                "apt-get install yum-utils -y",
+                                "apt update",
+                                "apt install apache2 -y"
+                            ]
+                        ]
+                    }
+                },
+                "Tags": [
+                    {
+                        "Key": "environment",
+                        "Value": "scenario1"
+                    }
+                ]
+            }
+        },
+        "scenario1tg": {
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties": {
+                "Name": "scenario1-tg",
+                "Port": "80",
+                "Protocol": "TCP",
+                "VpcId": {
+                    "Ref": "scenario1vpc"
+                },
+                "TargetType": "instance",
+                "HealthCheckProtocol" : "TCP",
+                "HealthCheckPort" : "traffic-port",
+                "HealthCheckEnabled" : "true",
+                "HealthCheckIntervalSeconds" : 30,
+                "Targets" : [
+                    {
+                        "Id" : 
+                            { "Ref" : "webservera" },
+                        "Port" : 80 
+                    },
+                    {
+                        "Id" : 
+                            { "Ref" : "webserverb" },
+                        "Port" : 80 
+                    }
+                ],
+                "Tags" : [
+                    {
+                    "Key" : "environment",
+                    "Value" : "scenario1"
+                    }
+                ]
+            }
+        },
+        "scenario1nlb" : {
+            "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties" : {
+                "Name" : "scenario1-nlb",
+                "Scheme" : "internet-facing",
+                "Subnets" : [
+                        {"Ref" : "scenario1subneta"},
+                        {"Ref" : "scenario1subnetb"}
+                ],
+                "Type" : "network"
+            }
+        },
+        "scenario1listener": {
+            "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties" : {
+                "DefaultActions" : [
+                    {
+                    "Type" : "forward",
+                    "TargetGroupArn" : { "Ref" : "scenario1tg"}
+                    }
+                ],
+                "LoadBalancerArn" : { "Ref" : "scenario1nlb"},
+                "Port" : 80,
+                "Protocol" : "TCP"
+            }
+        },
+        "scenario1bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": "scenario1bucketab20210530b"
+            }
+        },
+        "scenario1bucketpolicy": {
+            "DependsOn": [
+                "scenario1bucket"
+            ],
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref" : "scenario1bucket"
+                },
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "AWSCloudTrailAclCheck",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "cloudtrail.amazonaws.com"
+                            },
+                            "Action": "s3:GetBucketAcl",
+                            "Resource": {
+                                "Fn::GetAtt" : ["scenario1bucket", "Arn"]
+                            }
+                        },
+                        {
+                            "Sid": "AWSCloudTrailWrite",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "cloudtrail.amazonaws.com"
+                            },
+                            "Action": "s3:PutObject",
+                            "Resource": {
+                                "Fn::Join": [ "", [ {"Fn::GetAtt" : [ "scenario1bucket", "Arn"]}, "/AWSLogs/", {"Ref" : "AWS::AccountId"}, "/*"]]
+                            },
+                            "Condition": {
+                                "StringEquals": {
+                                    "s3:x-amz-acl": "bucket-owner-full-control"
+                                }
+                            }
+                        },
+                        {
+                            "Sid": "AWSConfigBucketPermissionsCheck",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "config.amazonaws.com"
+                                ]
+                            },
+                            "Action": "s3:GetBucketAcl",
+                            "Resource": {
+                                "Fn::GetAtt" : ["scenario1bucket", "Arn"]
+                            }
+                        },
+                        {
+                            "Sid": "AWSConfigBucketExistenceCheck",
+                            "Effect": "Allow",
+                            "Principal": {
+                            "Service": [
+                                "config.amazonaws.com"
+                                ]
+                            },
+                            "Action": "s3:ListBucket",
+                            "Resource": {
+                                "Fn::GetAtt" : ["scenario1bucket", "Arn"]
+                            }
+                        },
+                        {
+                            "Sid": "AWSConfigBucketDelivery",
+                            "Effect": "Allow",
+                            "Principal": {
+                            "Service": [
+                                "config.amazonaws.com"    
+                                ]
+                            },
+                            "Action": "s3:PutObject",
+                            "Resource": {
+                                "Fn::Join": [ "", [ {"Fn::GetAtt" : [ "scenario1bucket", "Arn"]}, "/AWSLogs/", {"Ref" : "AWS::AccountId"}, "/Config/*"]]
+                            },
+                            "Condition": { 
+                                "StringEquals": { 
+                                    "s3:x-amz-acl": "bucket-owner-full-control"
+                                }
+                            }
+                        }
+                    ]   
+                }
+            }
+        },
+        "scenario1loggroup" : {
+            "Type" : "AWS::Logs::LogGroup",
+            "Properties" : {
+                "LogGroupName" : "scenario1-lg",
+                "RetentionInDays" : 30
+            }
+        },
+        "scenario1CTtoCWRole" : {
+            "DependsOn" : "scenario1loggroup",
+            "Type" : "AWS::IAM::Role",
+            "Properties" : {
+                "AssumeRolePolicyDocument" : 
+                    {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                          {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {
+                              "Service": "cloudtrail.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                          }
+                        ]
+                    },
+                "RoleName" : "CTtoCWRole-ab",
+                "Path" : "/",
+                "Policies" : [
+                    {
+                        "PolicyName": "CloudTrailtoCloudWatchPolicy",
+                        "PolicyDocument" : {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                            {
+                                "Sid": "AWSCloudTrailCreateLogStream202105",
+                                "Effect": "Allow",
+                                "Action": [
+                                    "logs:CreateLogStream"
+                                ],
+                                "Resource": 
+                                    {
+                                        "Fn::GetAtt" : [ "scenario1loggroup", "Arn"]
+                                    }
+                            },
+                            {
+                                "Sid": "AWSCloudTrailPutLogEvents202105",
+                                "Effect": "Allow",
+                                "Action": [
+                                    "logs:PutLogEvents"
+                                ],
+                                "Resource": 
+                                    {
+                                        "Fn::GetAtt" : [ "scenario1loggroup", "Arn"]
+                                    }
+                            }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "scenario1cloudtrail": {
+            "DependsOn" : [
+                "scenario1bucket",
+                "scenario1bucketpolicy",
+                "scenario1CTtoCWRole"
+            ],
+            "Type": "AWS::CloudTrail::Trail",
+            "Properties": {
+                "TrailName": "scenario1-trail",
+                "S3BucketName": {
+                    "Ref" : "scenario1bucket"
+                },
+                "IsLogging": true,
+                "CloudWatchLogsLogGroupArn": {
+                    "Fn::GetAtt" : ["scenario1loggroup","Arn"]
+                },
+                "CloudWatchLogsRoleArn" : {
+                    "Fn::GetAtt" : ["scenario1CTtoCWRole", "Arn"]
+                }
+            }
+        },
+        "scenario1snstopic": {
+            "Type" : "AWS::SNS::Topic",
+            "Properties" : {
+                "DisplayName" : "Scenario1notification",
+                "TopicName" : "Scenario1notification"
+            }
+        },
+        "scenario1snssubscription" : {
+            "Type" : "AWS::SNS::Subscription",
+            "Properties" : {
+                "Protocol" : "email",
+                "Endpoint" : "andre.batson@telus.com",
+                "TopicArn" : { "Ref" : "scenario1snstopic"}
+            }
+        },
+        "scenario1ConfigRole" : {
+            "Type" : "AWS::IAM::Role",
+            "Properties" : {
+                "AssumeRolePolicyDocument" :
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Sid": "",
+                        "Effect": "Allow",
+                        "Principal": {
+                          "Service": "config.amazonaws.com"
+                        },
+                        "Action": "sts:AssumeRole"
+                      }
+                    ]
+                },
+                "RoleName" : "ConfigRole",
+                "Path" : "/",
+                "Policies" : [
+                    {
+                        "PolicyName": "AWSConfigPolicy-ab",
+                        "PolicyDocument" : {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect" : "Allow",
+                                    "Action" : [
+                                      "s3:PutObject",
+                                      "s3:PutObjectAcl"
+                                    ],
+                                    "Resource":[
+                                      "arn:aws:s3:::myBucketName/prefix/AWSLogs/myAccountID/*"
+                                    ],
+                                    "Condition" :{
+                                      "StringLike":{
+                                        "s3:x-amz-acl":"bucket-owner-full-control"
+                                      }
+                                    }
+                                },
+                                {
+                                    "Effect" :"Allow",
+                                    "Action" : [
+                                      "s3:GetBucketAcl"
+                                    ],
+                                    "Resource": 
+                                        {
+                                            "Fn::GetAtt" : [ "scenario1bucket", "Arn"]
+                                        }
+                                },
+                                {
+                                    "Effect" : "Allow",
+                                    "Action" : "sns:Publish",
+                                    "Resource" :
+                                            { "Ref" : "scenario1snstopic"}
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "scenario1configrecorder" : {
+            "Type" : "AWS::Config::ConfigurationRecorder",
+            "Properties" : {
+                "Name" : "Scenario1TestRecorder",
+                "RecordingGroup" : {
+                    "AllSupported" : "True"
+                },
+                "RoleARN" : 
+                    {
+                        "Fn::GetAtt" : ["scenario1ConfigRole", "Arn" ]
+                    }
+            }
+        },
+        "scenario1deliverychannel" : {
+            "Type" : "AWS::Config::DeliveryChannel",
+            "Properties" : {
+                "S3BucketName" : { "Ref" : "scenario1bucket"},
+                "SnsTopicARN" : { "Ref" : "scenario1snstopic"},
+                "ConfigSnapshotDeliveryProperties" : {
+                    "DeliveryFrequency" : "Six_Hours"
+                    }
+            }
+        }
+    }
+}
