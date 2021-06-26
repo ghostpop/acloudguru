@@ -157,7 +157,7 @@
         "webservera": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-                "KeyName": "newkey2021",
+                "KeyName": "june2021key",
                 "InstanceType": "t2.micro",
                 "ImageId": "ami-042e8287309f5df03",
                 "NetworkInterfaces": [
@@ -200,7 +200,7 @@
         "webserverb": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-                "KeyName": "newkey2021",
+                "KeyName": "june2021key",
                 "InstanceType": "t2.micro",
                 "ImageId": "ami-042e8287309f5df03",
                 "NetworkInterfaces": [
